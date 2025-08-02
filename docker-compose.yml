@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/contentbuilder?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=rootpassword
+    networks:
+      - app-network
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=content-builder
+    volumes:
+      # 命名卷用于持久化MySQL数据，不受容器生命周期影响
+      - mysql-data:/var/lib/mysql
+      # 可选：挂载初始化SQL脚本（如有）
+      # - ./backend/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    # 自动重启策略：数据库容器退出时总是重启
+    restart: always
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  # 命名卷声明：数据存储在Docker管理的持久化目录中
+  mysql-data:
+    # 可选：指定卷驱动和设备（适用于高级持久化需求）
+    # driver: local
+    # driver_opts:
+    #   device: /path/on/host/to/mysql/data
+    #   type: none
+    #   o: bind
